@@ -19,8 +19,8 @@ CFFEX              中国金融交易所
 INE                上海能源中心(原油在这里)
 KQ                 快期 (所有主连合约, 指数都归属在这里)
 SSWE               上期所仓单
-SSE                上海证券交易所(尚未上线)
-SZSE               深圳证券交易所(尚未上线)
+SSE                上海证券交易所
+SZSE               深圳证券交易所
 ================== ====================================================================
 
 一些合约代码示例::
@@ -34,13 +34,37 @@ SZSE               深圳证券交易所(尚未上线)
 	DCE.SP a1709&a1801 - 大商所 a1709&a1801 跨期合约
 
 	DCE.m1807-C-2450 - 大商所豆粕期权
+	CZCE.CF003C11000 - 郑商所棉花期权
+	SHFE.au2004C308 - 上期所黄金期权
+	CFFEX.IO2002-C-3550 - 中金所沪深300股指期权
 
 	KQ.m@CFFEX.IF - 中金所IF品种主连合约
 	KQ.i@SHFE.bu - 上期所bu品种指数
 
+	SSWE.CUH - 上期所仓单铜现货数据
+
+	SSE.600000 - 上交所浦发银行股票编码
+	SZSE.000001 - 深交所平安银行股票编码
+	SSE.000016 - 上证50指数
+	SSE.000300 - 沪深300指数
+	CSI.000905 - 中证500指数
+	SSE.510050 - 上交所上证50etf
+	SSE.510300 - 上交所沪深300etf
+	SZSE.159919 - 深交所沪深300etf
+	SSE.10002513 - 上交所上证50etf期权
+	SSE.10002504 - 上交所沪深300etf期权
+	SZSE.90000097 - 深交所沪深300etf期权
+
+
 **注意：并非所有合约都是可交易合约.**
 
-如您需要获得某个特定合约的代码，可以在天勤终端中察看
+需要注意郑商所的期货合约格式为合约字母大写，并且只有三位数字位，同时不同家交易所的期权代码格式也各不相同
+
+
+**目前获取股票行情需要连接测试行情服务器**
+
+获取股票行情连接方案请点击 `获取股票行情 <https://www.shinnytech.com/blog/tqsdk-stock-beta/>`_ 
+
 
 .. image:
   ...
@@ -48,7 +72,7 @@ SZSE               深圳证券交易所(尚未上线)
 
 实时行情
 ----------------------------------------------------
-:py:meth:`tqsdk.api.TqApi.get_quote` 函数提供实时行情和合约信息::
+:py:meth:`~tqsdk.api.TqApi.get_quote` 函数提供实时行情和合约信息::
 
     q = api.get_quote("SHFE.cu1901")
 
@@ -105,36 +129,42 @@ SZSE               深圳证券交易所(尚未上线)
         "expired": False,  # False (合约是否已下市)
     }
 
-对于每个合约, 只需要调用一次 get_quote 函数. 如果需要监控数据更新, 可以使用 wait_update::
+对于每个合约, 只需要调用一次 get_quote 函数. 如果需要监控数据更新, 可以使用 :py:meth:`~tqsdk.api.TqApi.wait_update`::
 
     q = api.get_quote("SHFE.cu1812")  # 获取SHFE.cu1812合约的行情
 
     while api.wait_update():
-        print(q["last_price"])    # 收到新行情时都会执行这行
+      print(q.last_price)    # 收到新行情时都会执行这行
 
 
 K线数据
 ----------------------------------------------------
-:py:meth:`tqsdk.api.TqApi.get_kline_serial` 函数获取指定合约和周期的K线序列数据::
+:py:meth:`~tqsdk.api.TqApi.get_kline_serial` 函数获取指定合约和周期的K线序列数据::
 
     klines = api.get_kline_serial("SHFE.cu1812", 10)  # 获取SHFE.cu1812合约的10秒K线
 
-TqApi.get_kline_serial的返回值是一个 pandas.DataFrame, 包含以下列::
+获取按照时间对齐的多合约K线::
 
-    id: int, 1234 (k线序列号)
-    datetime: int, 1501080715000000000 (K线起点时间(按北京时间)，自unix epoch(1970-01-01 00:00:00 GMT)以来的纳秒数)
-    open: float, 51450.0 (K线起始时刻的最新价)
-    high: float, 51450.0 (K线时间范围内的最高价)
-    low: float, 51450.0 (K线时间范围内的最低价)
-    close: float, 51450.0 (K线结束时刻的最新价)
-    volume: int, 11 (K线时间范围内的成交量)
-    open_oi: int, 27354 (K线起始时刻的持仓量)
-    close_oi: int, 27355 (K线结束时刻的持仓量)
+    klines = api.get_kline_serial(["SHFE.au1912", "SHFE.au2006"], 5)  # 获取SHFE.au2006向SHFE.au1912对齐的K线
+
+详细使用方法及说明请见 :py:meth:`~tqsdk.api.TqApi.get_kline_serial` 函数使用说明。
+
+:py:meth:`~tqsdk.api.TqApi.get_kline_serial` 的返回值是一个 pandas.DataFrame, 包含以下列::
+
+    id: 1234 (k线序列号)
+    datetime: 1501080715000000000 (K线起点时间(按北京时间)，自unix epoch(1970-01-01 00:00:00 GMT)以来的纳秒数)
+    open: 51450.0 (K线起始时刻的最新价)
+    high: 51450.0 (K线时间范围内的最高价)
+    low: 51450.0 (K线时间范围内的最低价)
+    close: 51450.0 (K线结束时刻的最新价)
+    volume: 11 (K线时间范围内的成交量)
+    open_oi: 27354 (K线起始时刻的持仓量)
+    close_oi: 27355 (K线结束时刻的持仓量)
 
 要使用K线数据, 请使用 pandas.DataFrame 的相关函数. 常见用法示例如下::
 
     klines.iloc[-1].close  # 最后一根K线的收盘价
-    klines.close  # 收盘价序列, 一个 pandas.serial
+    klines.close          # 收盘价序列, 一个 pandas.Serial
 
 TqSdk中, K线周期以秒数表示，支持不超过1日的任意周期K线，例如::
 
@@ -144,7 +174,7 @@ TqSdk中, K线周期以秒数表示，支持不超过1日的任意周期K线，�
 
 TqSdk中最多可以获取每个K线序列的最后8000根K线，无论哪个周期。也就是说，你如果提取小时线，最多可以提取最后8000根小时线，如果提取分钟线，最多也是可以提取最后8000根分钟线。
 
-对于每个K线序列, 只需要调用一次 get_kline_serial. 如果需要监控数据更新, 可以使用 wait_update::
+对于每个K线序列, 只需要调用一次 :py:meth:`~tqsdk.api.TqApi.get_kline_serial` . 如果需要监控数据更新, 可以使用 :py:meth:`~tqsdk.api.TqApi.wait_update` ::
 
     klines = api.get_kline_serial("SHFE.cu1812", 10)  # 获取SHFE.cu1812合约的10秒K线
 
@@ -152,9 +182,9 @@ TqSdk中最多可以获取每个K线序列的最后8000根K线，无论哪个周
         print(klines.iloc[-1])    # K线数据有任何变动时都会执行这行
 
 
-如果只想在新K线出现时收到信号, 可以配合使用 :py:meth:TqSdk.api.TqApi.is_changing::
+如果只想在新K线出现时收到信号, 可以配合使用 :py:meth:`~tqsdk.api.TqApi.is_changing`::
 
-    klines = api.get_kline_serial("SHFE.cu1812", 10)  # 获取SHFE.cu1812合约的10秒K线
+    klines = api.get_kline_serial("SHFE.cu1812", 10)        # 获取SHFE.cu1812合约的10秒K线
 
     while api.wait_update():
         if api.is_changing(klines.iloc[-1], "datetime"):    # 判定最后一根K线的时间是否有变化
@@ -163,14 +193,14 @@ TqSdk中最多可以获取每个K线序列的最后8000根K线，无论哪个周
 
 Tick序列
 ----------------------------------------------------
-:py:meth:`tqsdk.api.TqApi.get_tick_serial` 函数获取指定合约的Tick序列数据::
+:py:meth:`~tqsdk.api.TqApi.get_tick_serial` 函数获取指定合约的Tick序列数据::
 
     ticks = api.get_tick_serial("SHFE.cu1812")  # 获取SHFE.cu1812合约的Tick序列
 
-TqApi.get_tick_serial 的返回值是一个 pandas.DataFrame, 常见用法示例如下::
+:py:meth:`~tqsdk.api.TqApi.get_tick_serial` 的返回值是一个 pandas.DataFrame, 常见用法示例如下::
 
-    ticks.iloc[-1].bid_price1  # 最后一个Tick的买一价
-    ticks.volume  # 成交量序列, 一个 pandas.serial
+    ticks.iloc[-1].bid_price1       # 最后一个Tick的买一价
+    ticks.volume                    # 成交量序列, 一个 pandas.Serial
 
 tick序列的更新监控, 与K线序列采用同样的方式.
 
@@ -197,4 +227,4 @@ tick序列的更新监控, 与K线序列采用同样的方式.
       if api.is_changing(k2):
         print(k2)
 
-  关于 wait_update 和 is_changing 的详细说明, 请见 :ref:`framework`
+  关于 :py:meth:`~tqsdk.api.TqApi.wait_update` 和 :py:meth:`~tqsdk.api.TqApi.is_changing` 的详细说明, 请见 :ref:`framework`

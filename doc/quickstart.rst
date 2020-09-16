@@ -1,23 +1,40 @@
 .. _quickstart:
 
-快速入门
+十分钟快速入门
 =================================================
-希望快速开始使用 TqSdk?  本页面将介绍如何开始使用 TqSdk.
+希望快速开始使用天勤量化(TqSdk)？  本页面将介绍如何开始使用 TqSdk.
 
-首先, 请确认:
+如果您以前曾经使用过其它框架编写过策略程序, 这些内容可以快速帮助您了解 TqSdk 与它们的区别:
 
-* TqSdk 已经 :ref:`安装成功 <install>`
-* TqSdk 已经更新到 :ref:`最新版本 <version>`
+* :ref:`intro`
+* :ref:`for_ctp_user`
+* :ref:`for_vnpy_user`
 
-注意: TqSdk 使用了 python3 的原生协程和异步通讯库 asyncio，部分 IDE 不支持 asyncio，例如:
+注意: TqSdk 使用了 python3 的原生协程和异步通讯库 asyncio，部分 Python IDE 不支持 asyncio，例如:
 
 * spyder: 详见 https://github.com/spyder-ide/spyder/issues/7096
 * jupyter: 详见 https://github.com/jupyter/notebook/issues/3397
 
-可以直接运行示例代码，或使用支持 asyncio 的 IDE (例如: pycharm)
+可以直接运行示例代码，或使用支持 asyncio 的 IDE (例如: pycharm / vscode)
 
-让我们从一个简单的例子开始
 
+安装
+-------------------------------------------------
+天勤量化的核心是TqSdk开发包, 在安装天勤量化 (TqSdk) 前, 你需要先准备适当的环境和Python包管理工具, 包括:
+
+* Python 3.6 或以上版本
+* Windows 7 以上版本, Mac Os, 或 Linux
+
+
+你可以选择使用 `pip` 命令安装 TqSdk, 或者下载源代码安装. 对于一般用户, 我们推荐采用 `pip` 命令安装::
+
+    pip install tqsdk
+
+但是由于 `pip` 使用的是国外的服务器，普通用户往往下载速度过慢或不稳定，对于使用 `pip` 命令下载速度较慢的用户，我们推荐采用切换国内源的方式安装::
+
+    pip install tqsdk -i http://mirrors.aliyun.com/pypi/simple/ --trusted-host=mirrors.aliyun.com
+
+下面让我们从一个简单的例子开始
 
 .. _quickstart_1:
 
@@ -27,11 +44,11 @@
 
 首先, 必须引入 tqsdk 模块::
 
-    from tqsdk import TqApi, TqSim
+    from tqsdk import TqApi
 
-创建API实例. 需要指定交易帐号. 如果使用API自带的模拟功能可以指定为 TqSim::
+创建API实例::
 
-    api = TqApi(TqSim())
+    api = TqApi()
 
 获得上期所 cu1812 合约的行情引用::
 
@@ -39,18 +56,18 @@
 
 现在, 我们获得了一个对象 quote. 这个对象总是指向 SHFE.cu1812 合约的最新行情. 我们可以通过 quote 的各个字段访问行情数据::
 
-    print (quote["last_price"], quote["volume"])
+    print (quote.last_price, quote.volume)
 
 
 要等待行情数据更新, 我们还需要一些代码::
 
     while True:
         api.wait_update()
-        print (quote["datetime"], quote["last_price"])
+        print (quote.datetime, quote.last_price)
 
-api.wait_update() 是一个阻塞函数, 程序在这行上等待, 直到收到数据包才返回.
+:py:meth:`~tqsdk.api.TqApi.wait_update` 是一个阻塞函数, 程序在这行上等待, 直到收到数据包才返回.
 
-上面这个例子的完整程序请见 `t10.py <https://github.com/shinnytech/tqsdk-python/blob/master/tqsdk/demo/tutorial/t10.py>`_. 你也可以在自己电脑python安装目录的 site_packages/tqsdk/demo 下找到它
+上面这个例子的完整程序请见 :ref:`tutorial-t10` . 你也可以在自己电脑python安装目录的 site_packages/tqsdk/demo 下找到它
 
 很简单, 对吗? 到这里, 你已经了解用 TqSdk 开发程序的几个关键点:
 
@@ -66,9 +83,9 @@ api.wait_update() 是一个阻塞函数, 程序在这行上等待, 直到收到�
 
 使用K线数据
 -------------------------------------------------
-你很可能会需要合约的K线数据. 在TqSdk中, 你可以很方便的获得K线数据. 我们来请求 cu1812 合约的10秒线::
+你很可能会需要合约的K线数据. 在TqSdk中, 你可以很方便的获得K线数据. 我们来请求 cu2002 合约的10秒线::
 
-    klines = api.get_kline_serial("SHFE.cu1812", 10)
+    klines = api.get_kline_serial("SHFE.cu2002", 10)
 
 klines是一个pandas.DataFrame对象. 跟 api.get_quote() 一样, api.get_kline_serial() 也是返回K线序列的引用对象. K线序列数据也会跟实时行情一起同步自动更新. 你也同样需要用 api.wait_update() 等待数据刷新.
 
@@ -78,9 +95,42 @@ klines是一个pandas.DataFrame对象. 跟 api.get_quote() 一样, api.get_kline
         api.wait_update()
         print("最后一根K线收盘价", klines.close.iloc[-1])
 
-这部分的完整示例程序请见 `t30.py <https://github.com/shinnytech/tqsdk-python/blob/master/tqsdk/demo/tutorial/t30.py>`_.
+这部分的完整示例程序请见 :ref:`tutorial-t30` .
+
+我们也可以通过传入一个合约列表作为参数，来获取包含多个合约数据的K线::
+
+    klines = api.get_kline_serial(["SHFE.au1912", "SHFE.au2006"], 5)  # 获取SHFE.au2006向SHFE.au1912对齐的K线
+
+详细使用方法及说明请见 :py:meth:`~tqsdk.api.TqApi.get_kline_serial` 函数说明。
 
 到这里为止, 你已经知道了如何获取实时行情和K线数据, 下面一段将介绍如何访问你的交易账户并发送交易指令
+
+.. _quickstart_2_web_gui:
+
+生成图形化界面
+-------------------------------------------------
+如果想要将你订阅的K线或策略图形化显示, 只需在 :py:meth:`~tqsdk.api.TqApi` 中传入参数 web_gui = True即可::
+
+        # 引入TqSdk模块
+        from tqsdk import TqApi
+        # 创建api实例，设置web_gui=True生成图形化界面
+        api = TqApi(web_gui=True)
+        # 订阅 cu2002 合约的10秒线
+        klines = api.get_kline_serial("SHFE.cu2002", 10)
+        while True:
+            # 通过wait_update刷新数据
+            api.wait_update()
+
+当你运行该程序后，预期会显示如下两条信息::
+
+        2019-12-13 10:45:26,468 - INFO - 您可以访问 http://127.0.0.1:62964 查看策略绘制出的 K 线图形。
+        2019-12-13 10:45:27,422 - INFO - 通知: 与 wss://openmd.shinnytech.com/t/md/front/mobile 的网络连接已建立
+
+点击生成的地址，即可访问订阅的K线图形
+
+.. figure:: images/web_gui_klines.png
+
+具体请见 :ref:`web_gui`
 
 
 .. _quickstart_3:
@@ -97,24 +147,25 @@ klines是一个pandas.DataFrame对象. 跟 api.get_quote() 一样, api.get_kline
 
 与行情数据一样, 它们也通过 api.wait_update() 获得更新, 你也同样可以访问它们的成员变量::
 
-    print("可用资金: %.2f" % (account["available"]))
-    print("今多头: %d 手" % (position["volume_long_today"]))
+    print("可用资金: %.2f" % (account.available))
+    print("今多头: %d 手" % (position.volume_long_today))
 
 要在交易账户中发出一个委托单, 使用 api.insert_order() 函数::
 
-    order = api.insert_order(symbol="DCE.m1901", direction="BUY", offset="OPEN", volume=5)
+    order = api.insert_order(symbol="DCE.m1901", direction="BUY", offset="OPEN", volume=5, limit_price=3000)
 
 这个函数调用后会立即返回, order 是一个指向此委托单的引用对象, 你总是可以通过它的成员变量来了解委托单的最新状态::
 
-    print("委托单状态: %s, 已成交: %d 手" % (order["status"], order["volume_orign"] - order["volume_left"]))
+    print("委托单状态: %s, 已成交: %d 手" % (order.status, order.volume_orign - order.volume_left))
 
 要撤销一个委托单, 使用 api.cancel_order() 函数::
 
     api.cancel_order(order)
 
-这部分的完整示例程序请见 `t40.py <https://github.com/shinnytech/tqsdk-python/blob/master/tqsdk/demo/tutorial/t40.py>`_.
+这部分的完整示例程序请见 :ref:`tutorial-t40` .
 
 到这里为止, 我们已经掌握了 TqSdk 中行情和交易相关功能的基本使用. 我们将在下一节中, 组合使用它们, 创建一个自动交易程序
+
 
 
 .. _quickstart_4:
@@ -135,7 +186,7 @@ klines是一个pandas.DataFrame对象. 跟 api.get_quote() 一样, api.get_kline
 
 上面的代码中出现了一个新函数 api.is_changing(). 这个函数用于判定指定对象是否在最近一次 wait_update 中被更新.
 
-这部分的完整示例程序请见 `t60.py <https://github.com/shinnytech/tqsdk-python/blob/master/tqsdk/demo/tutorial/t60.py>`_.
+这部分的完整示例程序请见 :ref:`tutorial-t60` .
 
 
 .. _quickstart_5:
@@ -153,7 +204,7 @@ klines是一个pandas.DataFrame对象. 跟 api.get_quote() 一样, api.get_kline
     while True:
         api.wait_update()
         if api.is_changing(quote_near) or api.is_changing(quote_deferred):
-            spread = quote_near["last_price"] - quote_deferred["last_price"]
+            spread = quote_near.last_price - quote_deferred.last_price
             print("当前价差:", spread)
             if spread > 200:
                 print("目标持仓: 空近月，多远月")
@@ -166,23 +217,59 @@ klines是一个pandas.DataFrame对象. 跟 api.get_quote() 一样, api.get_kline
                 target_pos_deferred.set_target_volume(0)
 
 
-这部分的完整示例程序请见 `t80.py <https://github.com/shinnytech/tqsdk-python/blob/master/tqsdk/demo/tutorial/t80.py>`_.
+这部分的完整示例程序请见 :ref:`tutorial-t80` .
 
 
-.. _tutorial_backtest:
+.. _quickstart_backtest:
 
 策略回测
 -------------------------------------------------
 自己的交易程序写好以后, 我们总是希望在实盘运行前, 能先进行一下模拟测试. 要进行模拟测试, 只需要在创建TqApi实例时, 传入一个backtest参数::
 
-    api = TqApi(TqSim(), backtest=TqBacktest(start_dt=date(2018, 5, 1), end_dt=date(2018, 10, 1)))
+    api = TqApi(backtest=TqBacktest(start_dt=date(2018, 5, 1), end_dt=date(2018, 10, 1)))
 
 这样, 程序运行时就会按照 TqBacktest 指定的时间范围进行模拟交易测试, 并输出测试结果.
 
-这部分的完整示例程序请见 `backtest.py <https://github.com/shinnytech/tqsdk-python/blob/master/tqsdk/demo/tutorial/backtest.py>`_.
+关于策略程序回测的详细信息, 请见 :ref:`backtest`
+
+
+.. _real_trading:
+
+实盘交易
+-------------------------------------------------
+要让策略程序在实盘账号运行, 请在创建TqApi时传入一个 :py:class:`~tqsdk.api.TqAccount` , 填入 期货公司, 账号, 密码 (使用前请先 import TqAccount)::
+
+  from tqsdk import TqApi, TqAccount
+
+  api = TqApi(TqAccount("H海通期货", "412432343", "123456"))
+
+目前支持的期货公司列表, 请见 :ref:`broker_list` .
+
+关于实盘交易的详细信息, 请见 :ref:`trade`
+
+
+.. _sim_trading:
+
+模拟交易和论坛
+-------------------------------------------------
+如果您需要使用能保存账户资金及持仓信息的模拟交易功能, 请点击 `注册论坛账号 <https://www.shinnytech.com/register-intro/>`_ ，填写完对应信息之后，并点击激活邮件后即可进入 `用户论坛 <https://www.shinnytech.com/qa>`_ .
+
+.. figure:: images/tq_register.png
+
+同时刚刚注册完成的【邮箱地址】和【密码】可以作为 快期模拟 账号，通过 :py:class:`~tqsdk.api.TqKq` 对 auth 传入参数进行登录，这个 快期模拟 账户在快期APP、快期V3 pro 和天勤量化上是互通的::
+
+  from tqsdk import TqApi, TqKq
+
+  api = TqApi(TqKq(), auth = "邮箱地址,密码")
+
+
+
+特别的，如果创建TqApi实例时没有提供任何 TqAcccount 账户或 TqKq 的快期模拟账户，则每次会自动创建一个临时模拟账号，当程序运行结束时，临时账号内的记录将全部丢失::
+
+  api = TqApi()
 
 
 更多内容
 -------------------------------------------------
 * 要完整了解TqSdk的使用, 请阅读 :ref:`usage`
-* 更多TqSdk的示例 :ref:`demo`
+* 更多TqSdk的示例, 请见 :ref:`demo`
